@@ -1,0 +1,89 @@
+web: node backend/server.js
+"homepage": "main"
+cd frontend
+npm run build
+# start the process
+
+const path = require('path');
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../frontend/build')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+});
+heroku create
+heroku addons:create mongolab:sandbox
+git add .
+git commit -m "Deploy to Heroku"
+git push heroku main
+heroku config:set MONGO_URI=<your_mongodb_connection_string>
+heroku config:set SESSION_SECRET=<your_session_secret>
+heroku config:set GOOGLE_CLIENT_ID=<your_google_client_id>
+heroku config:set GOOGLE_CLIENT_SECRET=<your_google_client_secret>
+heroku open
+git clone <your-repository-url>
+cd mern-app
+cd backend
+npm install
+cd ../frontend
+npm install
+npm run build
+server {
+    listen 80;
+    server_name <your_domain_or_ip>;
+
+    location / {
+        proxy_pass http://localhost:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /static/ {
+        alias /path/to/your/frontend/build/static/;
+    }
+}
+npm install -g pm2
+cd backend
+pm2 start server.js
+name: Deploy to Heroku
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm install
+          cd ../backend
+          npm install
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Deploy to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          git remote add heroku https://git.heroku.com/<your-app-name>.git
+          git push heroku main
+

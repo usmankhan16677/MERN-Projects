@@ -1,0 +1,112 @@
+// src/actions/types.js
+export const SET_USER = 'SET_USER';
+export const REMOVE_USER = 'REMOVE_USER';
+// src/actions/userActions.js
+import { SET_USER, REMOVE_USER } from './types';
+
+export const setUser = (user) => ({
+  type: SET_USER,
+  payload: user
+});
+
+export const removeUser = () => ({
+  type: REMOVE_USER
+});
+// src/reducers/userReducer.js
+import { SET_USER, REMOVE_USER } from '../actions/types';
+
+const initialState = {
+  user: null
+};
+
+const userReducer = (state = initialState, action) => {
+  switch (action.type) {
+    case SET_USER:
+      return {
+        ...state,
+        user: action.payload
+      };
+    case REMOVE_USER:
+      return {
+        ...state,
+        user: null
+      };
+    default:
+      return state;
+  }
+};
+
+export default userReducer;
+// src/store/store.js
+import { createStore } from 'redux';
+import rootReducer from '../reducers/rootReducer';
+
+const store = createStore(
+  rootReducer,
+  window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+);
+
+export default store;
+// src/index.js
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { Provider } from 'react-redux';
+import store from './store/store';
+import App from './App';
+
+ReactDOM.render(
+  <Provider store={store}>
+    <App />
+  </Provider>,
+  document.getElementById('root')
+);
+// src/components/Profile.js
+import React, { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { setUser, removeUser } from '../actions/userActions';
+import axios from 'axios';
+
+const Profile = () => {
+  const user = useSelector(state => state.user.user);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    axios.get('http://localhost:5000/auth/current_user')
+      .then(response => {
+        dispatch(setUser(response.data));
+      });
+  }, [dispatch]);
+
+  const handleLogout = () => {
+    axios.get('http://localhost:5000/auth/logout')
+      .then(() => {
+        dispatch(removeUser());
+        window.location.href = '/';
+      });
+  };
+
+  if (!user) return <div>Loading...</div>;
+
+  return (
+    <div>
+      <h2>Profile</h2>
+      <p>Welcome, {user.googleId}</p>
+      <button onClick={handleLogout}>Logout</button>
+    </div>
+  );
+};
+
+export default Profile;
+// src/components/Login.js
+import React from 'react';
+
+const Login = () => {
+  return (
+    <div>
+      <h2>Login</h2>
+      <a href="http://localhost:5000/auth/google">Login with Google</a>
+    </div>
+  );
+};
+
+export default Login;

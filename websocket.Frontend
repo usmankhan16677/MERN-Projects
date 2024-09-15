@@ -1,0 +1,80 @@
+import React, { useState, useEffect } from 'react';
+import io from 'socket.io-client';
+
+const socket = io.connect('http://localhost:5000'); // Connect to backend
+
+function App() {
+  const [username, setUsername] = useState('');
+  const [room, setRoom] = useState('');
+  const [message, setMessage] = useState('');
+  const [chat, setChat] = useState([]);
+
+  // Join the room
+  const joinRoom = () => {
+    if (username !== '' && room !== '') {
+      socket.emit('joinRoom', room);
+    }
+  };
+
+  // Send message to the chat room
+  const sendMessage = () => {
+    if (message !== '') {
+      const chatMessage = { username, message, room };
+      socket.emit('chatMessage', chatMessage);
+      setChat([...chat, chatMessage]); // Add the message locally
+      setMessage('');
+    }
+  };
+
+  // Receive messages from the server
+  useEffect(() => {
+    socket.on('message', (data) => {
+      setChat([...chat, data]);
+    });
+  }, [chat]);
+
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <h1>Chat App</h1>
+      
+      <div>
+        <input
+          type='text'
+          placeholder='Username'
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <input
+          type='text'
+          placeholder='Room'
+          value={room}
+          onChange={(e) => setRoom(e.target.value)}
+        />
+        <button onClick={joinRoom}>Join Room</button>
+      </div>
+
+      <div>
+        <input
+          type='text'
+          placeholder='Message'
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+        />
+        <button onClick={sendMessage}>Send Message</button>
+      </div>
+
+      <div style={{ textAlign: 'left', marginTop: '20px' }}>
+        <h3>Chat Messages</h3>
+        <ul>
+          {chat.map((chatMessage, index) => (
+            <li key={index}>
+              <strong>{chatMessage.username}</strong>: {chatMessage.message}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+export default App;

@@ -1,0 +1,75 @@
+const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const cors = require('cors');
+
+// Load environment variables
+dotenv.config();
+
+// MongoDB connection setup
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+}).then(() => console.log('MongoDB connected'))
+  .catch((err) => console.log(err));
+
+// Create an Express app
+const app = express();
+app.use(cors());  // Enable CORS for frontend communication
+app.use(express.json()); // Enable parsing of JSON bodies
+
+// Server setup with HTTP and WebSocket
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: '*',
+  },
+});
+
+// Basic user model (MongoDB schema)
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true },
+  message: { type: String, required: true },
+}, { timestamps: true });
+
+const Message = mongoose.model('Message', userSchema);
+
+// WebSocket connection handler
+io.on('connection', (socket) => {
+  console.log('New client connected:', socket.id);
+
+  // Listen for joining a room
+  socket.on('joinRoom', (room) => {
+    socket.join(room);
+    console.log(`${socket.id} joined room: ${room}`);
+  });
+
+  // Listen for sending a message
+  socket.on('chatMessage', async ({ username, message, room }) => {
+    // Save message to MongoDB
+    const newMessage = new Message({ username, message });
+    await newMessage.save();
+
+    // Emit the message to the room
+    io.to(room).emit('message', { username, message });
+    console.log(`Message sent to room ${room}: ${message}`);
+  });
+
+  // Listen for disconnection
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
+
+// Basic route to check server status
+app.get('/', (req, res) => {
+  res.send('Server is running');
+});
+
+// Start the server
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

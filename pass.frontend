@@ -1,0 +1,61 @@
+import React from 'react';
+
+const Login = () => {
+  return (
+    <div>
+      <h2>Login</h2>
+      <a href="http://localhost:5000/auth/google">Login with Google</a>
+    </div>
+  );
+};
+
+export default Login;import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
+const Profile = () => {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    axios.get('http://localhost:5000/auth/current_user')
+      .then(response => {
+        setUser(response.data);
+      });
+  }, []);
+
+  const handleLogout = () => {
+    axios.get('http://localhost:5000/auth/logout')
+      .then(() => window.location.href = '/');
+  };
+
+  if (!user) return <div>Loading...</div>;
+
+  return (
+    <div>
+      <h2>Profile</h2>
+      <p>Welcome, {user.googleId}</p>
+      <button onClick={handleLogout}>Logout</button>
+    </div>
+  );
+};
+
+export default Profile;
+import React from 'react';
+import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import Login from './components/Login';
+import Profile from './components/Profile';
+
+function App() {
+  return (
+    <Router>
+      <div>
+        <Switch>
+          <Route path="/" exact component={Login} />
+          <Route path="/profile" component={Profile} />
+        </Switch>
+      </div>
+    </Router>
+  );
+}
+
+export default App;
+
